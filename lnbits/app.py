@@ -84,7 +84,8 @@ def create_app() -> FastAPI:
     register_routes(app)
     register_async_tasks(app)
     register_exception_handlers(app)
-
+    logger.debug(settings.lnbits_rate_limit_no)
+    logger.debug(settings.lnbits_rate_limit_unit)
     # Rate limiter
     limiter = Limiter(
         key_func=lambda request: request.client.host,
