@@ -84,8 +84,13 @@ def create_app() -> FastAPI:
     register_routes(app)
     register_async_tasks(app)
     register_exception_handlers(app)
-    logger.debug(settings.lnbits_rate_limit_no)
-    logger.debug(settings.lnbits_rate_limit_unit)
+
+    # Allow registering new extensions routes without direct access to the `app` object
+    setattr(core_app_extra, "register_new_ext_routes", register_new_ext_routes(app))
+
+    return app
+
+async def add_security_middleware(app: FastAPI):
     # Rate limiter
     limiter = Limiter(
         key_func=lambda request: request.client.host,
@@ -115,14 +120,7 @@ def create_app() -> FastAPI:
                 content={"detail": "IP not permitted"},
             )
         return response
-
     app.middleware("http")(block_allow_ip_middleware)
-
-    # Allow registering new extensions routes without direct access to the `app` object
-    setattr(core_app_extra, "register_new_ext_routes", register_new_ext_routes(app))
-
-    return app
-
 
 async def check_funding_source() -> None:
 
@@ -321,6 +319,9 @@ def register_startup(app: FastAPI):
 
             # setup admin settings
             await check_admin_settings()
+
+            # adds security middleware
+            await add_security_middleware(app)
 
             log_server_info()
 
